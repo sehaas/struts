@@ -10,7 +10,6 @@ import org.apache.struts2.ServletActionContext;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +31,8 @@ import java.util.List;
  */
 public class HttpMethodInterceptor extends AbstractInterceptor {
 
+    private static final long serialVersionUID = 7882145067327871376L;
+
     private static final Logger LOG = LoggerFactory.getLogger(HttpMethodInterceptor.class);
 
     private String badRequestResultName = "bad-request";
@@ -47,15 +48,17 @@ public class HttpMethodInterceptor extends AbstractInterceptor {
             }
             ((HttpMethodAware) (action)).setMethod(HttpMethod.parse(request.getMethod()));
         }
-        Method method = action.getClass().getMethod(invocation.getProxy().getMethod(), new Class[0]);
-        if (AnnotationUtils.isAnnotatedBy(method, AllowedHttpMethod.class)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Action's method #0 annotated with #1, checking if request #2 meets allowed methods!",
-                        invocation.getProxy().getMethod(), AllowedHttpMethod.class.getSimpleName(), request.getMethod());
+        if (invocation.getProxy().getMethod() != null) {
+            Method method = action.getClass().getMethod(invocation.getProxy().getMethod(), new Class[0]);
+            if (AnnotationUtils.isAnnotatedBy(method, AllowedHttpMethod.class)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Action's method #0 annotated with #1, checking if request #2 meets allowed methods!",
+                            invocation.getProxy().getMethod(), AllowedHttpMethod.class.getSimpleName(), request.getMethod());
+                }
+                return doIntercept(invocation, method);
             }
-            return doIntercept(invocation, method);
         }
-        if (invocation.getProxy().isMethodSpecified()) {
+        if (invocation.getProxy().getActionName() != null && invocation.getProxy().isMethodSpecified()) {
             Method actionMethod = action.getClass().getMethod(invocation.getProxy().getActionName(), new Class[0]);
             if (AnnotationUtils.isAnnotatedBy(actionMethod, AllowedHttpMethod.class)) {
                 if (LOG.isDebugEnabled()) {
